@@ -24,6 +24,8 @@ module OssEmulator
       case req.cmd
       when Request::HEAD_OBJECT 
         Object.head_object(req.bucket, req.object, response)
+      when Request::GET_OBJECT_META
+        Object.get_object_meta(req.bucket, req.object, request, response)
       else 
         OssResponse.response_error(response, ErrorCode::BAD_REQUEST)
       end #case
