@@ -209,6 +209,9 @@ module OssEmulator
         response['x-oss-object-type'] = 'Normal' 
         response['x-oss-storage-class'] = 'Standard'
         response['x-oss-server-time'] = Time.now.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        dataset[:custom_metadata].each do |key, value|
+          response['x-oss-meta-' + key] = value
+        end
       when Request::POST_INIT_MULTIPART_UPLOAD
         response['Content-Type'] = 'application/xml'
         response.body = <<-eos.strip
@@ -246,9 +249,6 @@ module OssEmulator
         response['name'] = dataset[:name]
         response['md5'] = dataset[:md5]
         response['modified_date'] = dataset[:modified_date]
-        dataset[:custom_metadata].each do |key, value|
-          response[key] = value
-        end
       when Request::GET_OBJECT_ACL
         response['Content-Type'] = 'application/xml'
         response['x-oss-server-time'] = Time.now.strftime("%a, %d %b %Y %H:%M:%S GMT")
