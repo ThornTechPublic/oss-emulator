@@ -93,7 +93,7 @@ module OssEmulator
               
               if right_parts.length>1
                 mid_part = right_parts[0]
-                common_prefix = prefix + mid_part + delimiter
+                common_prefix = (prefix || "") + mid_part + delimiter
                 if !common_prefix_list.include?(common_prefix)
                   count += 1
                   if count <= max_keys
