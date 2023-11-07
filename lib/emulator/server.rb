@@ -117,7 +117,7 @@ module OssEmulator
 
       case req.cmd
       when Request::POST_INIT_MULTIPART_UPLOAD 
-        Multipart.initiate_multipart_upload(req.bucket, req.object, request, response)
+        Multipart.initiate_multipart_upload(req.bucket, req.object, response)
       when Request::POST_APPEND_OBJECT  
         Object.append_object(req.bucket, req.object, request, req.query_parser['position'].first, response)
       when Request::POST_COMPLETE_MULTIPART_UPLOAD  

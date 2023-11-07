@@ -11,18 +11,19 @@ module OssEmulator
   module Multipart
     
     # InitiateMultipartUpload
-    def self.initiate_multipart_upload(bucket, object, request, response)
+    def self.initiate_multipart_upload(bucket, object, response)
       # NoSuchBucket
       return if OssResponse.response_no_such_bucket(response, bucket)
 
       # delete object
       OssUtil.delete_object_file_and_dir(bucket, object)
 
-      dataset = OssUtil.put_object_metadata(bucket, object, request)
-      dataset[:cmd] = Request::POST_INIT_MULTIPART_UPLOAD
-      dataset[:bucket] = bucket
-      dataset[:object] = object
-      dataset[:upload_id] = SecureRandom.hex
+      dataset = {
+        cmd: Request::POST_INIT_MULTIPART_UPLOAD,
+        bucket: bucket,
+        object: object,
+        upload_id: SecureRandom.hex
+      }
 
       OssResponse.response_ok(response, dataset)
     end
