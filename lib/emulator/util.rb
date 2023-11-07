@@ -113,7 +113,7 @@ module OssEmulator
             if count <= max_keys
               obj_hash = {}
               obj_hash[:bucket] = req.bucket
-              obj_hash[:key] = URI::Parser.new.escape(key_name)
+              obj_hash[:key] = key_name ? URI::Parser.new.escape(key_name).gsub(/\+/, '%2B') : key_name
               metadata = File.open(filename) { |file| YAML::load(file) }
               obj_hash[:md5] = metadata.key?(:md5) ? metadata[:md5].upcase : ''
               obj_hash[:content_type] = metadata.fetch(:content_type) { "application/octet-stream" }
