@@ -205,6 +205,7 @@ module OssEmulator
         response['Accept-Ranges'] = 'bytes'
         response['ETag'] = dataset[:md5]
         response['Content-Length'] = dataset[:size]
+        response['Content-Type'] = dataset[:content_type]
         response['Last-Modified'] = Time.parse(dataset[:modified_date]).strftime("%a, %d %b %Y %H:%M:%S GMT")
         response['x-oss-object-type'] = 'Normal' 
         response['x-oss-storage-class'] = 'Standard'
