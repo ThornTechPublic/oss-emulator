@@ -11,19 +11,18 @@ module OssEmulator
   module Multipart
     
     # InitiateMultipartUpload
-    def self.initiate_multipart_upload(bucket, object, response)
+    def self.initiate_multipart_upload(bucket, object, request, response)
       # NoSuchBucket
       return if OssResponse.response_no_such_bucket(response, bucket)
 
       # delete object
       OssUtil.delete_object_file_and_dir(bucket, object)
 
-      dataset = {
-        cmd: Request::POST_INIT_MULTIPART_UPLOAD, 
-        bucket: bucket, 
-        object: object, 
-        upload_id: SecureRandom.hex
-      }
+      dataset = OssUtil.put_object_metadata(bucket, object, request)
+      dataset[:cmd] = Request::POST_INIT_MULTIPART_UPLOAD
+      dataset[:bucket] = bucket
+      dataset[:object] = object
+      dataset[:upload_id] = SecureRandom.hex
 
       OssResponse.response_ok(response, dataset)
     end
@@ -39,20 +38,19 @@ module OssEmulator
     def self.complete_multipart_upload(req, request, response)
       parts = []
       xml = Document.new(request.body)
+      Log.info("Complete multipart body: #{xml}")
       xml.elements.each("*/Part") do |e| 
         part = {}
         part[:number] = e.elements["PartNumber"].text
-        etag = e.elements["ETag"].text
-        part[:etag] = (etag.include?("&#34;")) ? etag[/&#34;(.+)&#34;/, 1] : etag
         parts << part
       end
       
       object_dir = File.join(Config.store, req.bucket, req.object)
       base_obj_part_filename = File.join(object_dir, Store::OBJECT_CONTENT_PREFIX)
       complete_file_size = 0
-      parts.each do |part|
-        part_filename = "#{base_obj_part_filename}#{part[:number]}"
-        complete_file_size += File.size(part_filename)
+
+      Dir.glob(base_obj_part_filename + "*").each do |file|
+        complete_file_size += File.size(file)
       end
 
       options = { :size => complete_file_size, :part_size => File.size(File.join(object_dir, Store::OBJECT_CONTENT)) }

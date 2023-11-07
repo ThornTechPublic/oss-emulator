@@ -120,15 +120,15 @@ module OssEmulator
           elems = @path[1,@path_length].split("/")
           @bucket = elems[0]
           if elems.size == 1
-            if @request.request_line =~ /\?acl/
+            if @request.query_string =~ /acl/
               @cmd = Request::PUT_BUCKET_ACL
-            elsif @request.request_line =~ /\?logging/
+            elsif @request.query_string =~ /logging/
               @cmd = Request::PUT_BUCKET_LOGGING
-            elsif @request.request_line =~ /\?website/
+            elsif @request.query_string =~ /website/
               @cmd = Request::PUT_BUCKET_WEBSITE
-            elsif @request.request_line =~ /\?referer/
+            elsif @request.query_string =~ /referer/
               @cmd = Request::PUT_BUCKET_REFERER
-            elsif @request.request_line =~ /\?lifecycle/
+            elsif @request.query_string =~ /lifecycle/
               @cmd = Request::PUT_BUCKET_LIFECYCLE
             else
               if @request.header.include?('x-oss-acl')
@@ -138,11 +138,11 @@ module OssEmulator
               end
             end
           else
-            if @request.request_line =~ /\?acl/
+            if @request.query_string =~ /acl/
               @cmd = Request::PUT_OBJECT_ACL
-            elsif @request.request_line =~ /\?symlink/
+            elsif @request.query_string =~ /symlink/
               @cmd = Request::PUT_SYMLINK
-            elsif @request.request_line =~ /\?partNumber=/  
+            elsif @query_parser.has_key?('partNumber')
               if @request.header.include?('x-oss-copy-source')
                 @cmd = Request::PUT_UPLOAD_PART_COPY
               else
@@ -159,15 +159,15 @@ module OssEmulator
             @object = elems[1,elems.size].join('/')
           end
         else
-          if @request.request_line =~ /\?acl/
+          if @request.query_string =~ /acl/
             @cmd = Request::PUT_BUCKET_ACL
-          elsif @request.request_line =~ /\?logging/
+          elsif @request.query_string =~ /logging/
             @cmd = Request::PUT_BUCKET_LOGGING
-          elsif @request.request_line =~ /\?website/
+          elsif @request.query_string =~ /website/
             @cmd = Request::PUT_BUCKET_WEBSITE
-          elsif @request.request_line =~ /\?referer/
+          elsif @request.query_string =~ /referer/
             @cmd = Request::PUT_BUCKET_REFERER
-          elsif @request.request_line =~ /\?lifecycle/
+          elsif @request.query_string =~ /lifecycle/
             @cmd = Request::PUT_BUCKET_LIFECYCLE
           else
             if @request.header.include?('x-oss-acl')
@@ -229,11 +229,11 @@ module OssEmulator
         else  # bucket && object 
           if query["acl"] == ""
             @cmd = Request::GET_OBJECT_ACL
-          elsif query["objectMeta"] == "" || @request.request_line =~ /\?objectMeta/
+          elsif query["objectMeta"] == "" || @query_parser.has_key?('objectMeta')
             @cmd = Request::GET_OBJECT_META
           elsif @request.request_line =~ /\?symlink/
             @cmd = Request::GET_SYMLINK
-          elsif @request.request_line =~ /\?uploadId/
+          elsif @query_parser.has_key?('uploadId')
             @cmd = Request::GET_LIST_PARTS
           else
             if @method=="HEAD"
@@ -272,7 +272,7 @@ module OssEmulator
           end
         else
           # AbortMultipartUpload
-          if @request.request_line =~ /\?uploadId/  
+          if @query_parser.has_key?('uploadId')
             @cmd = Request::DELETE_ABORT_MULTIPART_UPLOAD
           else
             @cmd = Request::DELETE_OBJECT
@@ -299,7 +299,7 @@ module OssEmulator
         @cmd = Request::POST_APPEND_OBJECT
       elsif @query_parser.has_key?('uploadId')  # CompleteMultipartUpload
         @cmd = Request::POST_COMPLETE_MULTIPART_UPLOAD
-      elsif @request.request_line =~ /\?delete/
+      elsif @query_parser.has_key?('delete')
         @cmd = Request::DELETE_MULTIPLE_OBJECTS
       elsif @query_parser.has_key?('restore')  # RestoreObject
         @cmd = Request::POST_RESTORE_OBJECT
@@ -338,6 +338,7 @@ module OssEmulator
       Log.info("Request.dump_request : Dump Request Begin ")
       Log.info("Request.dump_request : #{@request.request_method}")
       Log.info("Request.dump_request : #{@request.path}")
+      Log.info("Request.dump_request : #{@request.query_string}")
       @request.each do |k,v|
         Log.info("#{k}:#{v}")
       end
