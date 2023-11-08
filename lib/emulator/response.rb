@@ -204,7 +204,7 @@ module OssEmulator
       when Request::HEAD_OBJECT
         response['Accept-Ranges'] = 'bytes'
         response['ETag'] = dataset[:md5]
-        response['Content-Length'] = 11
+        response['Content-Length'] = dataset[:size]
         response['Content-Type'] = dataset[:content_type]
         response['Last-Modified'] = Time.parse(dataset[:modified_date]).strftime("%a, %d %b %Y %H:%M:%S GMT")
         response['x-oss-object-type'] = 'Normal' 
@@ -249,15 +249,7 @@ module OssEmulator
       when Request::GET_OBJECT_META
         response['name'] = dataset[:name]
         response['md5'] = dataset[:md5]
-        response['Content-Length'] = dataset[:size]
-        response['Content-Type'] = dataset[:content_type]
-        response['Last-Modified'] = Time.parse(dataset[:modified_date]).strftime("%a, %d %b %Y %H:%M:%S GMT")
-        response['x-oss-object-type'] = 'Normal'
-        response['x-oss-storage-class'] = 'Standard'
-        response['x-oss-server-time'] = Time.now.strftime("%a, %d %b %Y %H:%M:%S GMT")
-        dataset[:custom_metadata].each do |key, value|
-          response['x-oss-meta-' + key] = value
-        end
+        response['modified_date'] = dataset[:modified_date]
       when Request::GET_OBJECT_ACL
         response['Content-Type'] = 'application/xml'
         response['x-oss-server-time'] = Time.now.strftime("%a, %d %b %Y %H:%M:%S GMT")
