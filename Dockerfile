@@ -1,4 +1,4 @@
-FROM ruby:alpine
+FROM ruby:3.3-alpine
 
 WORKDIR /work
 ADD . .
