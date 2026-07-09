@@ -105,7 +105,7 @@ module OssEmulator
 
       # Only update metadata if the src_object is the same as the dst_object
       if src_bucket==dst_bucket && src_object==dst_object
-        metadata = OssUtil.put_object_metadata(dst_bucket, dst_object, request)
+        metadata = OssUtil.put_object_metadata(dst_bucket, dst_object, request, OssUtil.copy_content_options(src_metadata_filename))
         metadata[:cmd] = Request::PUT_COPY_OBJECT
         OssResponse.response_ok(response, metadata)
         return
@@ -151,7 +151,7 @@ module OssEmulator
       metadata = {}
       metadata_directive = request.header["x-oss-metadata-directive"].first
       if metadata_directive == "REPLACE"
-        metadata = OssUtil.put_object_metadata(dst_bucket, dst_object, request)
+        metadata = OssUtil.put_object_metadata(dst_bucket, dst_object, request, OssUtil.copy_content_options(src_metadata_filename))
       else
         File.open(dst_metadata_filename, 'w') do |f|
           File.open(src_metadata_filename, 'r') do |input|

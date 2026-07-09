@@ -177,6 +177,14 @@ module OssEmulator
       end 
     end
 
+    # CopyObject leaves the object content untouched, so size/part_size/md5 must
+    # carry over from the source metadata instead of being recomputed from the
+    # first content file (multipart objects store one file per part).
+    def self.copy_content_options(src_metadata_filename)
+      metadata = File.open(src_metadata_filename) { |file| YAML::load(file) }
+      { size: metadata[:size], part_size: metadata[:part_size], md5: metadata[:md5] }
+    end
+
     def self.put_object_metadata(bucket, object, request, options = nil)
       obj_dir = File.join(Config.store, bucket, object)
       content_filename = File.join(obj_dir, Store::OBJECT_CONTENT)

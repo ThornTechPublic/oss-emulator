@@ -100,26 +100,63 @@ module OssEmulator
           options = { type: 'single_whole' }
           response.body = ChunkFile.open(object_content_filename, options)
         end
-      else # multipart 
+      else # multipart
+        base_part_filename = File.join(object_dir, "#{Store::OBJECT_CONTENT_PREFIX}")
+        total_size = 0
+        part_number = 1
+        while File.exist?("#{base_part_filename}#{part_number}")
+          total_size += File.size("#{base_part_filename}#{part_number}")
+          part_number += 1
+        end
+
         if dataset.include?('Content-Range') # multipart with Range
           Log.debug("response_get_object_by_chunk : request_id=#{request_id}: multipart with Range", 'blue')
           response.status = 206
           response['Content-Range'] = dataset['Content-Range']
-
-          options = { type: 'multipart_range', start_pos: dataset[:pos], read_length: dataset[:bytes_to_read], request_id: request_id,
-                      base_part_filename: File.join(object_dir, "#{Store::OBJECT_CONTENT_PREFIX}")
-                    }
-          response.body = ChunkFile.open(object_content_filename, options)
-          Log.debug("response_get_object_by_chunk : request_id=#{request_id}: multipart with Range end.", 'blue')
+          start_pos = dataset[:pos]
+          bytes_to_read = dataset[:bytes_to_read]
         else # multipart without Range
           Log.debug("response_get_object_by_chunk : request_id=#{request_id}: multipart without Range", 'blue')
-
-          options = { type: 'multipart_whole', request_id: request_id, base_part_filename: File.join(object_dir, "#{Store::OBJECT_CONTENT_PREFIX}") }
-          response.body = ChunkFile.open(object_content_filename, options)
+          start_pos = 0
+          bytes_to_read = total_size
         end
+
+        bytes_to_read = [[total_size - start_pos, 0].max, bytes_to_read].min
+        response['Content-Length'] = bytes_to_read.to_s
+        # WEBrick >= 1.7 streams IO bodies with IO.copy_stream, which bypasses the
+        # Ruby read override in ChunkFile and sends only the first part file. A
+        # callable body keeps the part-splicing logic in emulator code.
+        response.body = multipart_content_body(base_part_filename, start_pos, bytes_to_read)
       end
 
     end # function response_get_object_by_chunk 
+
+    # Stream bytes_to_read bytes starting at start_pos from the ordered part files
+    def self.multipart_content_body(base_part_filename, start_pos, bytes_to_read)
+      proc do |out|
+        bytes_left = bytes_to_read
+        skip = start_pos
+        part_number = 1
+        while bytes_left > 0
+          part_filename = "#{base_part_filename}#{part_number}"
+          break unless File.exist?(part_filename)
+          part_size = File.size(part_filename)
+          if skip >= part_size
+            skip -= part_size
+          else
+            File.open(part_filename, 'rb') do |f|
+              f.seek(skip)
+              while bytes_left > 0 && (chunk = f.read([Object::STREAM_CHUNK_SIZE, bytes_left].min))
+                out.write(chunk)
+                bytes_left -= chunk.bytesize
+              end
+            end
+            skip = 0
+          end
+          part_number += 1
+        end
+      end
+    end
 
     # Response OK to various Request Method
     def self.response_ok(response, dataset={})
